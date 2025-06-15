@@ -1,0 +1,85 @@
+rules:
+  - id: android-hardcoded-secret
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $KEY = "$SECRET"
+          - pattern: |
+              $KEY = '$SECRET'
+    metavariable-regex:
+      $KEY: (?i)(password|secret|key|token|api_key|private_key)
+      $SECRET: .{8,}
+    message: "Hardcoded secret detected"
+    languages: [java]
+    severity: ERROR
+    
+  - id: android-weak-crypto
+    patterns:
+      - pattern-either:
+          - pattern: DES.getInstance(...)
+          - pattern: RC4.getInstance(...)
+          - pattern: MD5.getInstance(...)
+          - pattern: SHA1.getInstance(...)
+    message: "Weak cryptographic algorithm detected"
+    languages: [java]
+    severity: WARNING
+    
+  - id: android-webview-javascript
+    patterns:
+      - pattern: $WEBVIEW.getSettings().setJavaScriptEnabled(true)
+    message: "WebView JavaScript enabled - potential XSS risk"
+    languages: [java]
+    severity: WARNING
+    
+  - id: android-sql-injection
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $DB.rawQuery($QUERY + $VAR, ...)
+          - pattern: |
+              $DB.execSQL($QUERY + $VAR)
+    message: "Potential SQL injection vulnerability"
+    languages: [java]
+    severity: ERROR
+    
+  - id: android-intent-scheme
+    patterns:
+      - pattern: Intent.parseUri($URI, Intent.URI_INTENT_SCHEME)
+    message: "Intent scheme URI parsing can be dangerous"
+    languages: [java]
+    severity: WARNING
+    
+  - id: android-world-readable-file
+    patterns:
+      - pattern: |
+          openFileOutput($FILE, MODE_WORLD_READABLE)
+    message: "World readable file creation"
+    languages: [java]
+    severity: ERROR
+    
+  - id: android-world-writable-file
+    patterns:
+      - pattern: |
+          openFileOutput($FILE, MODE_WORLD_WRITEABLE)
+    message: "World writable file creation" 
+    languages: [java]
+    severity: ERROR
+    
+  - id: android-trust-all-ssl
+    patterns:
+      - pattern-either:
+          - pattern: |
+              new X509TrustManager() {
+                public void checkClientTrusted(...) {}
+                public void checkServerTrusted(...) {}
+                ...
+              }
+          - pattern: |
+              $MANAGER.setHostnameVerifier(new HostnameVerifier() {
+                public boolean verify(...) {
+                  return true;
+                }
+              })
+    message: "SSL/TLS certificate validation disabled"
+    languages: [java]
+    severity: ERROR
